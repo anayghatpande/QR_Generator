@@ -1,0 +1,51 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install qrcode[pil] pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --windowed --name "QR_Generator" --noconfirm qr_generator.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QR_Generator
+          path: dist/QR_Generator.exe
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: QR_Generator
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: QR_Generator.exe
+          generate_release_notes: true

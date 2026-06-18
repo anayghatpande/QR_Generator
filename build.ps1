@@ -23,7 +23,7 @@ if (-not $pyinstaller) {
         $r -eq "y"
     }
     if ($install) {
-        pip install pyinstaller
+        pip install pyinstaller cryptography
     } else {
         exit 1
     }

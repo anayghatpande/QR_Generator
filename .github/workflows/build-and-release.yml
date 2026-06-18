@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install qrcode[pil] pyinstaller
+          pip install qrcode[pil] pyinstaller cryptography
 
       - name: Build executable
         run: |

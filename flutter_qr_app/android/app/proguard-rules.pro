@@ -1,4 +1,8 @@
 # ML Kit barcode scanning
+# Don't warn about optional Play Core dependency (used by Flutter for split APKs)
+-dontwarn com.google.android.play.core.**
+
+# ML Kit barcode scanning
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.mlkit.vision.barcode.** { *; }
 -keep class com.google.mlkit.vision.common.** { *; }

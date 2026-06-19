@@ -70,11 +70,19 @@ class _DecryptScreenState extends State<DecryptScreen> {
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text(
-              'Scan with camera or paste the encrypted text manually')),
-    );
+    final result = await _scannerController.analyzeImage(image.path);
+    if (!mounted) return;
+    final barcode = result?.barcodes.firstOrNull;
+    if (barcode?.rawValue != null) {
+      setState(() {
+        _scannedData = barcode!.rawValue;
+        _textController.text = _scannedData!;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No QR code found in the image')),
+      );
+    }
   }
 
   void _decrypt() {
@@ -100,11 +108,12 @@ class _DecryptScreenState extends State<DecryptScreen> {
       _error = null;
     });
 
+    debugPrint('Decrypting: text="${text.length}chars" password="${password.length}chars"');
     try {
       final url = _encryptionService.decrypt(text, password);
       setState(() => _decryptedUrl = url);
     } catch (e) {
-      setState(() => _error = 'Wrong password or invalid data');
+      setState(() => _error = e.toString());
     } finally {
       setState(() => _decrypting = false);
     }

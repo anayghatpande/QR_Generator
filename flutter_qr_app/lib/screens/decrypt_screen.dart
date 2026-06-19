@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -17,6 +19,7 @@ class _DecryptScreenState extends State<DecryptScreen> {
   final _passwordController = TextEditingController();
   final _textController = TextEditingController();
   final _encryptionService = EncryptionService();
+  final _scannerController = MobileScannerController(autoStart: false);
 
   bool _scanning = false;
   String? _scannedData;
@@ -28,6 +31,7 @@ class _DecryptScreenState extends State<DecryptScreen> {
   void dispose() {
     _passwordController.dispose();
     _textController.dispose();
+    _scannerController.dispose();
     super.dispose();
   }
 
@@ -37,9 +41,27 @@ class _DecryptScreenState extends State<DecryptScreen> {
     if (barcode?.rawValue != null) {
       setState(() {
         _scannedData = barcode!.rawValue;
-        _scanning = false;
         _textController.text = _scannedData!;
       });
+      _stopScanning();
+    }
+  }
+
+  void _startScanning() {
+    setState(() => _scanning = true);
+    unawaited(_scannerController.start());
+  }
+
+  void _stopScanning() {
+    setState(() => _scanning = false);
+    unawaited(_scannerController.stop());
+  }
+
+  void _toggleScanning() {
+    if (_scanning) {
+      _stopScanning();
+    } else {
+      _startScanning();
     }
   }
 
@@ -95,6 +117,44 @@ class _DecryptScreenState extends State<DecryptScreen> {
     }
   }
 
+  Widget _errorBuilder(
+      BuildContext context, MobileScannerException error, Widget? child) {
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              error.errorCode.message,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            if (error.errorDetails?.message case final String msg) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  msg,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => unawaited(_scannerController.start()),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -116,44 +176,50 @@ class _DecryptScreenState extends State<DecryptScreen> {
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 220,
-                    child: _scanning
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: MobileScanner(
-                              onDetect: _onDetect,
-                            ),
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              color: AppTheme.bg,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.border),
-                            ),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.qr_code_scanner,
-                                      size: 48, color: AppTheme.textSecondary),
-                                  const SizedBox(height: 8),
-                                  Text('Tap below to start scanning',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                              color: AppTheme.textSecondary)),
-                                ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
+                          MobileScanner(
+                            controller: _scannerController,
+                            onDetect: _onDetect,
+                            errorBuilder: _errorBuilder,
+                          ),
+                          if (!_scanning)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.bg,
+                                border: Border.all(color: AppTheme.border),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.qr_code_scanner,
+                                        size: 48,
+                                        color: AppTheme.textSecondary),
+                                    const SizedBox(height: 8),
+                                    Text('Tap below to start scanning',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                                color:
+                                                    AppTheme.textSecondary)),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () =>
-                              setState(() => _scanning = !_scanning),
+                          onPressed: _toggleScanning,
                           icon: Icon(_scanning
                               ? Icons.stop
                               : Icons.qr_code_scanner),

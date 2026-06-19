@@ -1,0 +1,66 @@
+name: Flutter Build
+
+on:
+  push:
+    tags:
+      - "flutter-v*"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.2
+      - run: flutter pub get
+        working-directory: flutter_qr_app
+      - run: flutter build apk --release
+        working-directory: flutter_qr_app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QR_Generator-Android
+          path: flutter_qr_app/build/app/outputs/flutter-apk/app-release.apk
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.2
+      - run: flutter pub get
+        working-directory: flutter_qr_app
+      - run: flutter build web --release
+        working-directory: flutter_qr_app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QR_Generator-Web
+          path: flutter_qr_app/build/web
+
+  release:
+    needs: [build-android, build-web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: QR_Generator-Android
+      - uses: actions/download-artifact@v4
+        with:
+          name: QR_Generator-Web
+      - name: Zip web build
+        run: zip -r qr_generator_web.zip .
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app-release.apk
+            qr_generator_web.zip
+          generate_release_notes: true

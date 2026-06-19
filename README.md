@@ -1,6 +1,6 @@
 # QR Code Generator
 
-A clean, modern desktop app to generate QR codes from URLs or text. Built with Python and Tkinter.
+Generate, protect, and decrypt QR codes — on **desktop** (Python/Tkinter) and **mobile/web** (Flutter).
 
 ## Features
 
@@ -65,15 +65,52 @@ python qr_generator.py
 
 The script installs PyInstaller automatically if missing.
 
+## Flutter App (Android / iOS / Web)
+
+A cross-platform version inside `flutter_qr_app/` with the same features.
+
+### Features
+
+- **Generate** — URL/text input, error correction (L/M/Q/H), size control, password protection
+- **Decrypt** — scan QR with camera, paste encrypted text, decrypt with password
+- **Cross-compatible** — QR codes encrypted in the Python app can be decrypted in the Flutter app and vice versa
+
+### Run from source
+
+```bash
+cd flutter_qr_app
+flutter pub get
+flutter run           # Android/iOS
+flutter run -d chrome # Web
+```
+
+### Build
+
+```bash
+flutter build apk --release         # Android
+flutter build ios --release         # iOS
+flutter build web --release         # Web
+```
+
 ## CI/CD
 
-Pushing a version tag triggers [GitHub Actions](.github/workflows/build-and-release.yml):
+### Desktop (Python)
+
+Push a version tag to build the `.exe` and create a Release:
 
 ```bash
 git tag v1.1.0 && git push origin v1.1.0
 ```
 
-The workflow builds the `.exe`, attaches it to a new Release, and generates release notes.
+### Flutter (Android + Web)
+
+Push a `flutter-v*` tag:
+
+```bash
+git tag flutter-v1.0.0 && git push origin flutter-v1.0.0
+```
+
+The workflow builds an **APK** and **Web bundle**, then creates a Release with both.
 
 ## License
 
